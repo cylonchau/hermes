@@ -6,7 +6,6 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/cylonchau/hermes/pkg/model"
-	"github.com/cylonchau/hermes/pkg/repository"
 )
 
 // RecordDAO Record的GORM数据访问层
@@ -16,20 +15,19 @@ type RecordDAO struct {
 
 // NewRecordDAO 创建RecordDAO实例，实现所有Record相关接口
 func NewRecordDAO(db *gorm.DB) *RecordDAO {
+	db.AutoMigrate(
+		&model.Record{},
+		&model.ARecord{},
+		&model.AAAARecord{},
+		&model.CNAMERecord{},
+		&model.MXRecord{},
+		&model.NSRecord{},
+		&model.SOARecord{},
+		&model.SRVRecord{},
+		&model.TXTRecord{},
+	)
 	return &RecordDAO{db: db}
 }
-
-// 确保实现所有接口的编译时检查
-var _ repository.RecordRepository = (*RecordDAO)(nil)
-var _ repository.ARecordRepository = (*RecordDAO)(nil)
-var _ repository.AAAARecordRepository = (*RecordDAO)(nil)
-var _ repository.MXRecordRepository = (*RecordDAO)(nil)
-var _ repository.TXTRecordRepository = (*RecordDAO)(nil)
-var _ repository.SOARecordRepository = (*RecordDAO)(nil)
-var _ repository.NSRecordRepository = (*RecordDAO)(nil)
-var _ repository.CNAMERecordRepository = (*RecordDAO)(nil)
-var _ repository.SRVRecordRepository = (*RecordDAO)(nil)
-var _ repository.DNSQueryRepository = (*RecordDAO)(nil)
 
 // ========== RecordRepository 接口实现 ==========
 
@@ -39,7 +37,7 @@ func (dao *RecordDAO) CreateRecord(ctx context.Context, record *model.Record) er
 }
 
 // GetRecordByID 根据ID获取记录
-func (dao *RecordDAO) GetRecordByID(ctx context.Context, recordID uint) (*model.Record, error) {
+func (dao *RecordDAO) GetRecordByID(ctx context.Context, recordID int64) (*model.Record, error) {
 	var record model.Record
 	err := dao.db.WithContext(ctx).
 		Where("id = ? AND is_active = ?", recordID, true).
@@ -52,7 +50,7 @@ func (dao *RecordDAO) GetRecordByID(ctx context.Context, recordID uint) (*model.
 }
 
 // GetRecordsByZone 根据Zone获取所有记录
-func (dao *RecordDAO) GetRecordsByZone(ctx context.Context, zoneID uint) ([]*model.Record, error) {
+func (dao *RecordDAO) GetRecordsByZone(ctx context.Context, zoneID int64) ([]*model.Record, error) {
 	var records []*model.Record
 	err := dao.db.WithContext(ctx).
 		Where("zone_id = ? AND is_active = ?", zoneID, true).
@@ -62,7 +60,7 @@ func (dao *RecordDAO) GetRecordsByZone(ctx context.Context, zoneID uint) ([]*mod
 }
 
 // GetRecordsByName 根据名称获取记录
-func (dao *RecordDAO) GetRecordsByName(ctx context.Context, zoneID uint, recordName string) ([]*model.Record, error) {
+func (dao *RecordDAO) GetRecordsByName(ctx context.Context, zoneID int64, recordName string) ([]*model.Record, error) {
 	var records []*model.Record
 	err := dao.db.WithContext(ctx).
 		Where("zone_id = ? AND name = ? AND is_active = ?", zoneID, recordName, true).
@@ -76,19 +74,19 @@ func (dao *RecordDAO) UpdateRecord(ctx context.Context, record *model.Record) er
 }
 
 // DeleteRecord 物理删除记录
-func (dao *RecordDAO) DeleteRecord(ctx context.Context, recordID uint) error {
+func (dao *RecordDAO) DeleteRecord(ctx context.Context, recordID int64) error {
 	return dao.db.WithContext(ctx).Delete(&model.Record{}, recordID).Error
 }
 
 // SoftDeleteRecord 软删除记录
-func (dao *RecordDAO) SoftDeleteRecord(ctx context.Context, recordID uint) error {
+func (dao *RecordDAO) SoftDeleteRecord(ctx context.Context, recordID int64) error {
 	return dao.db.WithContext(ctx).Model(&model.Record{}).
 		Where("id = ?", recordID).
 		Update("is_active", false).Error
 }
 
 // CountRecordsByZone 统计Zone下的记录数量
-func (dao *RecordDAO) CountRecordsByZone(ctx context.Context, zoneID uint) (int64, error) {
+func (dao *RecordDAO) CountRecordsByZone(ctx context.Context, zoneID int64) (int64, error) {
 	var count int64
 	err := dao.db.WithContext(ctx).Model(&model.Record{}).
 		Where("zone_id = ? AND is_active = ?", zoneID, true).
@@ -102,6 +100,6 @@ func (dao *RecordDAO) BatchCreateRecords(ctx context.Context, records []*model.R
 }
 
 // BatchDeleteRecords 批量删除记录
-func (dao *RecordDAO) BatchDeleteRecords(ctx context.Context, recordIDs []uint) error {
+func (dao *RecordDAO) BatchDeleteRecords(ctx context.Context, recordIDs []int64) error {
 	return dao.db.WithContext(ctx).Delete(&model.Record{}, recordIDs).Error
 }

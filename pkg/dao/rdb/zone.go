@@ -6,7 +6,6 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/cylonchau/hermes/pkg/model"
-	"github.com/cylonchau/hermes/pkg/repository"
 )
 
 // ZoneDAO Zone的关系型数据访问层 - 目标支持MySQL/PostgreSQL/SQLite等关系型数据库
@@ -15,7 +14,8 @@ type ZoneDAO struct {
 }
 
 // NewZoneDAO 创建ZoneDAO实例
-func NewZoneDAO(db *gorm.DB) repository.ZoneRepository {
+func NewZoneDAO(db *gorm.DB) *ZoneDAO {
+	db.AutoMigrate(&model.Zone{})
 	return &ZoneDAO{db: db}
 }
 
@@ -25,7 +25,7 @@ func (dao *ZoneDAO) Create(ctx context.Context, zone *model.Zone) error {
 }
 
 // GetByID 根据ID查询Zone
-func (dao *ZoneDAO) GetByID(ctx context.Context, id uint) (*model.Zone, error) {
+func (dao *ZoneDAO) GetByID(ctx context.Context, id int64) (*model.Zone, error) {
 	var zone model.Zone
 	err := dao.db.WithContext(ctx).Where("id = ? AND is_active = ?", id, true).First(&zone).Error
 	if err != nil {
@@ -66,12 +66,12 @@ func (dao *ZoneDAO) Update(ctx context.Context, zone *model.Zone) error {
 }
 
 // Delete 物理删除Zone
-func (dao *ZoneDAO) Delete(ctx context.Context, id uint) error {
+func (dao *ZoneDAO) Delete(ctx context.Context, id int64) error {
 	return dao.db.WithContext(ctx).Delete(&model.Zone{}, id).Error
 }
 
 // SoftDelete 软删除Zone
-func (dao *ZoneDAO) SoftDelete(ctx context.Context, id uint) error {
+func (dao *ZoneDAO) SoftDelete(ctx context.Context, id int64) error {
 	return dao.db.WithContext(ctx).Model(&model.Zone{}).Where("id = ?", id).Update("is_active", false).Error
 }
 
@@ -149,6 +149,6 @@ func (dao *ZoneDAO) BatchUpdate(ctx context.Context, zones []*model.Zone) error 
 }
 
 // BatchDelete 批量删除Zone
-func (dao *ZoneDAO) BatchDelete(ctx context.Context, ids []uint) error {
+func (dao *ZoneDAO) BatchDelete(ctx context.Context, ids []int64) error {
 	return dao.db.WithContext(ctx).Delete(&model.Zone{}, ids).Error
 }

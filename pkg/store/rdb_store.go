@@ -12,18 +12,18 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
-	"k8s.io/klog/v2"
+
+	"github.com/cylonchau/hermes/pkg/logger"
 )
 
 var (
 	// 单例模式
-	instance *UnionRDBStoreInterface
+	instance *RDBStore
 	initOnce sync.Once
 )
 
-// 统一RDB接口
-type UnionRDBStoreInterface struct {
+// RDBStore implements the Store interface for relational databases.
+type RDBStore struct {
 	db     *gorm.DB
 	config DatabaseConfig
 	once   sync.Once
@@ -31,15 +31,15 @@ type UnionRDBStoreInterface struct {
 }
 
 // GetInstance 获取数据库管理器单例
-func GetInstance() *UnionRDBStoreInterface {
+func GetInstance() Store {
 	initOnce.Do(func() {
-		instance = &UnionRDBStoreInterface{}
+		instance = &RDBStore{}
 	})
 	return instance
 }
 
 // Initialize 初始化数据库连接
-func (m *UnionRDBStoreInterface) Initialize(config DatabaseConfig) error {
+func (m *RDBStore) Initialize(config DatabaseConfig) error {
 	var initErr error
 
 	m.once.Do(func() {
@@ -63,24 +63,24 @@ func (m *UnionRDBStoreInterface) Initialize(config DatabaseConfig) error {
 			return
 		}
 
-		klog.V(2).Infof("Database connection initialized successfully, type: %v", config.Type)
+		logger.Info("Database connection initialized successfully", logger.Any("type", config.Type))
 	})
 
 	return initErr
 }
 
 // GetDB 获取数据库实例
-func (m *UnionRDBStoreInterface) GetDB() *gorm.DB {
+func (m *RDBStore) GetDB() *gorm.DB {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.db
 }
 
 // initDatabase 初始化数据库连接
-func (m *UnionRDBStoreInterface) initDatabase() error {
-	newLogger := KlogLogger{LogLevel: logger.Info}
+func (m *RDBStore) initDatabase() error {
+	gormLogger := logger.NewGormLogger(logger.Default())
 	gormConfig := &gorm.Config{
-		Logger: newLogger,
+		Logger: gormLogger,
 	}
 
 	var err error
@@ -100,7 +100,7 @@ func (m *UnionRDBStoreInterface) initDatabase() error {
 }
 
 // initMySQL 初始化MySQL连接
-func (m *UnionRDBStoreInterface) initMySQL(config *gorm.Config) error {
+func (m *RDBStore) initMySQL(config *gorm.Config) error {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		m.config.Username,
 		m.config.Password,
@@ -115,7 +115,7 @@ func (m *UnionRDBStoreInterface) initMySQL(config *gorm.Config) error {
 }
 
 // initSQLite 初始化SQLite连接
-func (m *UnionRDBStoreInterface) initSQLite(config *gorm.Config) error {
+func (m *RDBStore) initSQLite(config *gorm.Config) error {
 	dbPath := m.config.File + ".db"
 	var err error
 	m.db, err = gorm.Open(sqlite.Open(dbPath), config)
@@ -123,7 +123,7 @@ func (m *UnionRDBStoreInterface) initSQLite(config *gorm.Config) error {
 }
 
 // initPostgreSQL 初始化PostgreSQL连接
-func (m *UnionRDBStoreInterface) initPostgreSQL(config *gorm.Config) error {
+func (m *RDBStore) initPostgreSQL(config *gorm.Config) error {
 	sslMode := m.config.SSLMode
 	if sslMode == "" {
 		sslMode = "disable"
@@ -144,7 +144,7 @@ func (m *UnionRDBStoreInterface) initPostgreSQL(config *gorm.Config) error {
 }
 
 // configureConnectionPool 配置数据库连接池参数
-func (m *UnionRDBStoreInterface) configureConnectionPool() error {
+func (m *RDBStore) configureConnectionPool() error {
 	dbConn, err := m.db.DB()
 	if err != nil {
 		return fmt.Errorf("failed to get underlying database connection: %w", err)
@@ -177,18 +177,18 @@ func (m *UnionRDBStoreInterface) configureConnectionPool() error {
 
 	// 打印连接池统计信息
 	stats := dbConn.Stats()
-	klog.V(4).Infof("Database connection pool stats: MaxOpen=%d, Open=%d, InUse=%d, Idle=%d",
-		stats.MaxOpenConnections,
-		stats.OpenConnections,
-		stats.InUse,
-		stats.Idle,
+	logger.Info("Database connection pool stats",
+		logger.Int("max_open", stats.MaxOpenConnections),
+		logger.Int("open", stats.OpenConnections),
+		logger.Int("in_use", stats.InUse),
+		logger.Int("idle", stats.Idle),
 	)
 
 	return nil
 }
 
 // Close 关闭数据库连接
-func (m *UnionRDBStoreInterface) Close() error {
+func (m *RDBStore) Close() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -203,7 +203,7 @@ func (m *UnionRDBStoreInterface) Close() error {
 }
 
 // HealthCheck 执行数据库健康检查
-func (m *UnionRDBStoreInterface) HealthCheck() error {
+func (m *RDBStore) HealthCheck() error {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -223,7 +223,7 @@ func (m *UnionRDBStoreInterface) HealthCheck() error {
 }
 
 // MonitorConnectionPool 监控数据库连接池状态
-func (m *UnionRDBStoreInterface) MonitorConnectionPool(ctx context.Context) {
+func (m *RDBStore) MonitorConnectionPool(ctx context.Context) {
 	if m.db == nil {
 		return
 	}
@@ -238,28 +238,28 @@ func (m *UnionRDBStoreInterface) MonitorConnectionPool(ctx context.Context) {
 		case <-ticker.C:
 			dbConn, err := m.db.DB()
 			if err != nil {
-				klog.Errorf("Failed to get database connection for monitoring: %v", err)
+				logger.Error("Failed to get database connection for monitoring", logger.Err(err))
 				continue
 			}
 
 			stats := dbConn.Stats()
-			klog.V(5).Infof("Connection pool status - Open: %d, InUse: %d, Idle: %d, WaitCount: %d",
-				stats.OpenConnections,
-				stats.InUse,
-				stats.Idle,
-				stats.WaitCount,
+			logger.Debug("Connection pool status",
+				logger.Int("open", stats.OpenConnections),
+				logger.Int("in_use", stats.InUse),
+				logger.Int("idle", stats.Idle),
+				logger.Int64("wait_count", stats.WaitCount),
 			)
 
 			// 如果等待队列过长则记录警告
 			if stats.WaitCount > 10 {
-				klog.Warningf("High database connection pool wait queue: %d", stats.WaitCount)
+				logger.Warn("High database connection pool wait queue", logger.Int64("wait_count", stats.WaitCount))
 			}
 		}
 	}
 }
 
 // validateConfig 验证数据库配置
-func (m *UnionRDBStoreInterface) validateConfig() error {
+func (m *RDBStore) validateConfig() error {
 	config := m.config
 
 	switch config.Type {
@@ -288,14 +288,14 @@ func (m *UnionRDBStoreInterface) validateConfig() error {
 }
 
 // IsInitialized 检查数据库是否已初始化
-func (m *UnionRDBStoreInterface) IsInitialized() bool {
+func (m *RDBStore) IsInitialized() bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.db != nil
 }
 
 // AutoMigrate 自动迁移表结构
-func (m *UnionRDBStoreInterface) AutoMigrate(models ...interface{}) error {
+func (m *RDBStore) AutoMigrate(models ...interface{}) error {
 	if m.db == nil {
 		return fmt.Errorf("database not initialized")
 	}
@@ -304,14 +304,14 @@ func (m *UnionRDBStoreInterface) AutoMigrate(models ...interface{}) error {
 }
 
 // GetDatabaseType 获取数据库类型
-func (m *UnionRDBStoreInterface) GetDatabaseType() DBType {
+func (m *RDBStore) GetDatabaseType() DBType {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.config.Type
 }
 
 // GetConfigInfo 获取配置信息（隐藏敏感信息）
-func (m *UnionRDBStoreInterface) GetConfigInfo() map[string]interface{} {
+func (m *RDBStore) GetConfigInfo() map[string]interface{} {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -332,7 +332,7 @@ func (m *UnionRDBStoreInterface) GetConfigInfo() map[string]interface{} {
 }
 
 // getDBTypeName 获取数据库类型名称
-func (m *UnionRDBStoreInterface) getDBTypeName(dbType DBType) string {
+func (m *RDBStore) getDBTypeName(dbType DBType) string {
 	switch dbType {
 	case MySQL:
 		return "mysql"
