@@ -1,19 +1,13 @@
 package model
 
-import (
-	"time"
-)
-
 // MX记录表
 type MXRecord struct {
-	ID        int64     `gorm:"primaryKey;autoIncrement" json:"id"`
-	RecordID  int64     `gorm:"unique;not null" json:"record_id"`
-	Host      string    `gorm:"not null;index" json:"host"`     // 邮件服务器域名
-	Priority  uint16    `gorm:"not null;index" json:"priority"` // 优先级
-	Remark    string    `gorm:"type:text" json:"remark"`        // 备注
-	Provider  string    `gorm:"size:100" json:"provider"`       // 邮件服务提供商
-	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+	ID       int64  `gorm:"type:bigint;primaryKey;autoIncrement;comment:主键id;" json:"id"`
+	RecordID int64  `gorm:"type:bigint;unique;not null;comment:关联record表的id;" json:"record_id"`
+	Host     string `gorm:"type:varchar(255);not null;index;comment:邮件服务器域名;" json:"host"` // 邮件服务器域名
+	Priority uint16 `gorm:"type:smallint;not null;index;comment:优先级;" json:"priority"`     // 优先级
+	Remark   string `gorm:"type:text;comment:备注;" json:"remark"`                           // 备注
+	Provider string `gorm:"type:varchar(100);comment:邮件服务提供商;" json:"provider"`            // 邮件服务提供商
 
 	// 关联关系
 	Record Record `gorm:"foreignKey:RecordID;constraint:OnDelete:CASCADE" json:"record,omitempty"`

@@ -1,6 +1,12 @@
 # Build outputs
 /dist/
 
+doc
+doc/*
+
+refer
+refer/*
+
 # deb build artifacts
 /debian/process-exporter/
 /debian/.debhelper/
