@@ -1,0 +1,10 @@
+app_name: hermes
+database_driver: sqlite
+sqlite:
+  file: hermes
+  max_open_connection: "20"
+  max_idle_connection: "10"
+
+server:
+  log_level: debug
+  port: 8080

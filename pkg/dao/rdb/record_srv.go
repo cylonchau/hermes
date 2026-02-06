@@ -25,12 +25,12 @@ func (dao *RecordDAO) CreateSRVRecord(ctx context.Context, record *model.Record,
 func (dao *RecordDAO) GetSRVRecords(ctx context.Context, zoneName, recordName string) ([]*model.SRVRecord, error) {
 	var srvRecords []*model.SRVRecord
 	err := dao.db.WithContext(ctx).
-		Joins("JOIN dns_records ON dns_records.id = dns_srv_records.record_id").
-		Joins("JOIN dns_zones ON dns_zones.id = dns_records.zone_id").
-		Where("dns_zones.name = ? AND dns_zones.is_active = ? AND dns_records.name = ? AND dns_records.is_active = ?",
+		Joins("JOIN record ON record.id = record_srv.record_id").
+		Joins("JOIN zone ON zone.id = record.zone_id").
+		Where("zone.name = ? AND zone.is_active = ? AND record.name = ? AND record.is_active = ?",
 			zoneName, true, recordName, true).
 		Preload("Record").
-		Order("dns_srv_records.priority ASC, dns_srv_records.weight DESC").
+		Order("record_srv.priority ASC, record_srv.weight DESC").
 		Find(&srvRecords).Error
 	return srvRecords, err
 }

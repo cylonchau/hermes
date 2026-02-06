@@ -23,11 +23,12 @@ func (dao *RecordDAO) CreateNSRecord(ctx context.Context, record *model.Record, 
 func (dao *RecordDAO) GetNSRecords(ctx context.Context, zoneName, recordName string) ([]*model.NSRecord, error) {
 	var nsRecords []*model.NSRecord
 	err := dao.db.WithContext(ctx).
-		Joins("JOIN dns_records ON dns_records.id = dns_ns_records.record_id").
-		Joins("JOIN dns_zones ON dns_zones.id = dns_records.zone_id").
-		Where("dns_zones.name = ? AND dns_zones.is_active = ? AND dns_records.name = ? AND dns_records.is_active = ?",
+		Joins("JOIN record ON record.id = record_ns.record_id").
+		Joins("JOIN zone ON zone.id = record.zone_id").
+		Where("zone.name = ? AND zone.is_active = ? AND record.name = ? AND record.is_active = ?",
 			zoneName, true, recordName, true).
 		Preload("Record").
+		Order("record_ns.id ASC").
 		Find(&nsRecords).Error
 	return nsRecords, err
 }

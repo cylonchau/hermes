@@ -17,3 +17,7 @@ type Zone struct {
 func (Zone) TableName() string {
 	return "zone"
 }
+
+func init() {
+	RegisterModel(&Zone{})
+}

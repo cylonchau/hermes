@@ -27,3 +27,7 @@ type Record struct {
 func (Record) TableName() string {
 	return "record"
 }
+
+func init() {
+	RegisterModel(&Record{})
+}

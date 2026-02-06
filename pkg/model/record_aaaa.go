@@ -13,3 +13,7 @@ type AAAARecord struct {
 func (AAAARecord) TableName() string {
 	return "record_aaaa"
 }
+
+func init() {
+	RegisterModel(&AAAARecord{})
+}

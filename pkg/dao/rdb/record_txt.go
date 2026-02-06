@@ -23,11 +23,12 @@ func (dao *RecordDAO) CreateTXTRecord(ctx context.Context, record *model.Record,
 func (dao *RecordDAO) GetTXTRecords(ctx context.Context, zoneName, recordName string) ([]*model.TXTRecord, error) {
 	var txtRecords []*model.TXTRecord
 	err := dao.db.WithContext(ctx).
-		Joins("JOIN dns_records ON dns_records.id = dns_txt_records.record_id").
-		Joins("JOIN dns_zones ON dns_zones.id = dns_records.zone_id").
-		Where("dns_zones.name = ? AND dns_zones.is_active = ? AND dns_records.name = ? AND dns_records.is_active = ?",
+		Joins("JOIN record ON record.id = record_txt.record_id").
+		Joins("JOIN zone ON zone.id = record.zone_id").
+		Where("zone.name = ? AND zone.is_active = ? AND record.name = ? AND record.is_active = ?",
 			zoneName, true, recordName, true).
 		Preload("Record").
+		Order("record_txt.id ASC").
 		Find(&txtRecords).Error
 	return txtRecords, err
 }

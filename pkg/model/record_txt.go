@@ -15,3 +15,7 @@ type TXTRecord struct {
 func (TXTRecord) TableName() string {
 	return "record_txt"
 }
+
+func init() {
+	RegisterModel(&TXTRecord{})
+}

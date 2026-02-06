@@ -16,3 +16,7 @@ type MXRecord struct {
 func (MXRecord) TableName() string {
 	return "record_mx"
 }
+
+func init() {
+	RegisterModel(&MXRecord{})
+}

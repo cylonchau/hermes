@@ -14,3 +14,7 @@ type NSRecord struct {
 func (NSRecord) TableName() string {
 	return "record_ns"
 }
+
+func init() {
+	RegisterModel(&NSRecord{})
+}

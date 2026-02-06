@@ -25,9 +25,9 @@ func (dao *RecordDAO) CreateSOARecord(ctx context.Context, record *model.Record,
 func (dao *RecordDAO) GetSOARecord(ctx context.Context, zoneName string) (*model.SOARecord, error) {
 	var soaRecord model.SOARecord
 	err := dao.db.WithContext(ctx).
-		Joins("JOIN dns_records ON dns_records.id = dns_soa_records.record_id").
-		Joins("JOIN dns_zones ON dns_zones.id = dns_records.zone_id").
-		Where("dns_zones.name = ? AND dns_zones.is_active = ? AND dns_records.name IN (?, '@') AND dns_records.is_active = ?",
+		Joins("JOIN record ON record.id = record_soa.record_id").
+		Joins("JOIN zone ON zone.id = record.zone_id").
+		Where("zone.name = ? AND zone.is_active = ? AND record.name IN (?, '@') AND record.is_active = ?",
 			zoneName, true, zoneName, true).
 		Preload("Record").
 		First(&soaRecord).Error

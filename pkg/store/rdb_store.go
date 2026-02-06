@@ -287,14 +287,14 @@ func (m *RDBStore) validateConfig() error {
 	return nil
 }
 
-// IsInitialized 检查数据库是否已初始化
+// 检查数据库是否已初始化
 func (m *RDBStore) IsInitialized() bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.db != nil
 }
 
-// AutoMigrate 自动迁移表结构
+// 自动迁移表结构
 func (m *RDBStore) AutoMigrate(models ...interface{}) error {
 	if m.db == nil {
 		return fmt.Errorf("database not initialized")
@@ -303,14 +303,14 @@ func (m *RDBStore) AutoMigrate(models ...interface{}) error {
 	return m.db.AutoMigrate(models...)
 }
 
-// GetDatabaseType 获取数据库类型
+// 获取数据库类型
 func (m *RDBStore) GetDatabaseType() DBType {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.config.Type
 }
 
-// GetConfigInfo 获取配置信息（隐藏敏感信息）
+// 获取配置信息（隐藏敏感信息）
 func (m *RDBStore) GetConfigInfo() map[string]interface{} {
 	m.mu.RLock()
 	defer m.mu.RUnlock()

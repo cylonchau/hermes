@@ -14,3 +14,7 @@ type View struct {
 func (View) TableName() string {
 	return "view"
 }
+
+func init() {
+	RegisterModel(&View{})
+}

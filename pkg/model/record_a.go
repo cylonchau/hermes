@@ -13,3 +13,7 @@ type ARecord struct {
 func (ARecord) TableName() string {
 	return "record_a"
 }
+
+func init() {
+	RegisterModel(&ARecord{})
+}

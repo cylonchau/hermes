@@ -18,3 +18,7 @@ type SRVRecord struct {
 func (SRVRecord) TableName() string {
 	return "record_srv"
 }
+
+func init() {
+	RegisterModel(&SRVRecord{})
+}

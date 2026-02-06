@@ -44,3 +44,9 @@ rpmbuild/
 *.swp
 .DS_Store
 Thumbs.db
+
+# Output
+hermes
+hermes/*
+*.db
+**/*.db

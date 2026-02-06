@@ -20,3 +20,7 @@ type SOARecord struct {
 func (SOARecord) TableName() string {
 	return "record_soa"
 }
+
+func init() {
+	RegisterModel(&SOARecord{})
+}

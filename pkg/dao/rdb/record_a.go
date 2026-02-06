@@ -25,12 +25,12 @@ func (dao *RecordDAO) CreateARecord(ctx context.Context, record *model.Record, A
 func (dao *RecordDAO) GetARecords(ctx context.Context, zoneName, recordName string) ([]*model.ARecord, error) {
 	var ARecords []*model.ARecord
 	err := dao.db.WithContext(ctx).
-		Joins("JOIN dns_records ON dns_records.id = dns_a_records.record_id").
-		Joins("JOIN dns_zones ON dns_zones.id = dns_records.zone_id").
-		Where("dns_zones.name = ? AND dns_zones.is_active = ? AND dns_records.name = ? AND dns_records.is_active = ?",
+		Joins("JOIN record ON record.id = record_a.record_id").
+		Joins("JOIN zone ON zone.id = record.zone_id").
+		Where("zone.name = ? AND zone.is_active = ? AND record.name = ? AND record.is_active = ?",
 			zoneName, true, recordName, true).
 		Preload("Record").
-		Order("dns_A_records.priority ASC, dns_A_records.weight DESC").
+		Order("record_a.id ASC").
 		Find(&ARecords).Error
 	return ARecords, err
 }

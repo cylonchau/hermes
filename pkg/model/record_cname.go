@@ -14,3 +14,7 @@ type CNAMERecord struct {
 func (CNAMERecord) TableName() string {
 	return "record_cname"
 }
+
+func init() {
+	RegisterModel(&CNAMERecord{})
+}

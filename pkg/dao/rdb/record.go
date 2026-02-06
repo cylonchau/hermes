@@ -9,23 +9,13 @@ import (
 )
 
 // RecordDAO Record的GORM数据访问层
+
 type RecordDAO struct {
 	db *gorm.DB
 }
 
 // NewRecordDAO 创建RecordDAO实例，实现所有Record相关接口
 func NewRecordDAO(db *gorm.DB) *RecordDAO {
-	db.AutoMigrate(
-		&model.Record{},
-		&model.ARecord{},
-		&model.AAAARecord{},
-		&model.CNAMERecord{},
-		&model.MXRecord{},
-		&model.NSRecord{},
-		&model.SOARecord{},
-		&model.SRVRecord{},
-		&model.TXTRecord{},
-	)
 	return &RecordDAO{db: db}
 }
 

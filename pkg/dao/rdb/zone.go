@@ -8,14 +8,15 @@ import (
 	"github.com/cylonchau/hermes/pkg/model"
 )
 
-// ZoneDAO Zone的关系型数据访问层 - 目标支持MySQL/PostgreSQL/SQLite等关系型数据库
+// ZoneDAO Zone的关系型数据访问层
+// 目标支持MySQL/PostgreSQL/SQLite等关系型数据库
+
 type ZoneDAO struct {
 	db *gorm.DB
 }
 
 // NewZoneDAO 创建ZoneDAO实例
 func NewZoneDAO(db *gorm.DB) *ZoneDAO {
-	db.AutoMigrate(&model.Zone{})
 	return &ZoneDAO{db: db}
 }
 

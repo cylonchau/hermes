@@ -23,12 +23,12 @@ func (dao *RecordDAO) CreateMXRecord(ctx context.Context, record *model.Record, 
 func (dao *RecordDAO) GetMXRecords(ctx context.Context, zoneName, recordName string) ([]*model.MXRecord, error) {
 	var mxRecords []*model.MXRecord
 	err := dao.db.WithContext(ctx).
-		Joins("JOIN dns_records ON dns_records.id = dns_mx_records.record_id").
-		Joins("JOIN dns_zones ON dns_zones.id = dns_records.zone_id").
-		Where("dns_zones.name = ? AND dns_zones.is_active = ? AND dns_records.name = ? AND dns_records.is_active = ?",
+		Joins("JOIN record ON record.id = record_mx.record_id").
+		Joins("JOIN zone ON zone.id = record.zone_id").
+		Where("zone.name = ? AND zone.is_active = ? AND record.name = ? AND record.is_active = ?",
 			zoneName, true, recordName, true).
 		Preload("Record").
-		Order("dns_mx_records.priority ASC").
+		Order("record_mx.priority ASC").
 		Find(&mxRecords).Error
 	return mxRecords, err
 }

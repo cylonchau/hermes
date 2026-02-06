@@ -15,3 +15,7 @@ type CAARecord struct {
 func (CAARecord) TableName() string {
 	return "record_caa"
 }
+
+func init() {
+	RegisterModel(&CAARecord{})
+}

@@ -22,3 +22,8 @@ type DatabaseConfig struct {
 	MaxOpenConnection string // MySQL, SQLite specific
 	MaxIdleConnection string // MySQL, SQLite specific
 }
+
+// IsEmpty 检查配置是否为空
+func (c DatabaseConfig) IsEmpty() bool {
+	return c.Host == "" && c.File == "" && c.Database == ""
+}
