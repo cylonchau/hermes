@@ -1,24 +1,52 @@
-# Binaries for programs and plugins
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
+# Build outputs
+/dist/
 
-# Test binary, built with `go test -c`
-*.test
+doc
+doc/*
 
-# Output of the go coverage tool, specifically when used with LiteIDE
-*.out
+refer
+refer/*
 
-# Dependency directories (remove the comment below to include it)
-# vendor/
+# deb build artifacts
+/debian/process-exporter/
+/debian/.debhelper/
+/debian/files
+/debian/*.debhelper*
+/debian/*.substvars
 
-pantheon
-_output/*
-_output
-example/*
-example
-.idea
+# RPM build artifacts
+rpmbuild/
+
+# Parent directory artifacts
+../*.deb
+../*.rpm
+../*.buildinfo
+../*.changes
+
+# Rust build/cache
+# Ignore all target dirs in any sub-crate
+**/target/
+**/.cargo/
+**/.rustup/
+**/clippy.toml
+**/rustfmt.toml
+
+# IDE / Editor configs
+.vscode/
+.idea/
+
+# Temporary / Environment
+.env
+.venv
+*.log
+*.tmp
+*.bak
+*.swp
+.DS_Store
+Thumbs.db
+
+# Output
+hermes
+hermes/*
 *.db
-main
+**/*.db
