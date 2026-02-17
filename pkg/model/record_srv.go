@@ -13,6 +13,9 @@ type SRVRecord struct {
 
 	// 关联关系
 	Record Record `gorm:"foreignKey:RecordID;constraint:OnDelete:CASCADE" json:"record,omitempty"`
+
+	// 不映射为表字段，用于 Join 查询结果映射，避免嵌套对象解析
+	TTL uint32 `gorm:"->" json:"ttl"`
 }
 
 func (SRVRecord) TableName() string {

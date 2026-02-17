@@ -116,7 +116,7 @@ func (m *RDBStore) initMySQL(config *gorm.Config) error {
 
 // initSQLite 初始化SQLite连接
 func (m *RDBStore) initSQLite(config *gorm.Config) error {
-	dbPath := m.config.File + ".db"
+	dbPath := m.config.File
 	var err error
 	m.db, err = gorm.Open(sqlite.Open(dbPath), config)
 	return err
