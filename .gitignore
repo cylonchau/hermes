@@ -54,3 +54,4 @@ hermes/*
 /coredns/
 /coredns-*
 !COREDNS_VERSION
+*.test
