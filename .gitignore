@@ -50,3 +50,7 @@ hermes
 hermes/*
 *.db
 **/*.db
+# CoreDNS
+/coredns/
+/coredns-*
+!COREDNS_VERSION
