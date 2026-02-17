@@ -147,13 +147,9 @@ func (r *Resolver) parseQuery(ctx context.Context, qName string) (zone, name str
 		return "", "", fmt.Errorf("invalid domain name: %s", qName)
 	}
 
-	// 假设最后两个 label 是 zone
-	zone = strings.Join(labels[len(labels)-2:], ".")
-	if len(labels) > 2 {
-		name = strings.Join(labels[:len(labels)-2], ".")
-	} else {
-		name = "@"
-	}
+	// 使用 FQDN 格式（带末尾点号）以匹配数据库中的存储规范
+	zone = strings.Join(labels[len(labels)-2:], ".") + "."
+	name = qName
 
 	return zone, name, nil
 }

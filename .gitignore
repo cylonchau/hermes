@@ -50,3 +50,8 @@ hermes
 hermes/*
 *.db
 **/*.db
+coredns/**
+coredns*/**
+coredns*
+coredns/*
+coredns.*

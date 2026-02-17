@@ -1,0 +1,12 @@
+. {
+    bind 127.0.0.1
+    hermes {
+        db sqlite {
+            file /Users/max/Desktop/move/codeplaces/go/hermes/hermes.db
+        }
+    }
+    log
+    errors
+    forward . 114.114.114.114 8.8.8.8
+    cache 30
+}
