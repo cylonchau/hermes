@@ -75,7 +75,8 @@ func parseHermes(c *caddy.Controller) (*Hermes, error) {
 
 				// 解析数据库子块
 				for c.NextBlock() {
-					switch c.Val() {
+					val := c.Val()
+					switch val {
 					case "host":
 						if !c.NextArg() {
 							return nil, c.ArgErr()
@@ -122,8 +123,11 @@ func parseHermes(c *caddy.Controller) (*Hermes, error) {
 							return nil, c.ArgErr()
 						}
 						h.DatabaseConfig.MaxIdleConnection = c.Val()
+					case "{", "}":
+						// 容错处理：显式忽略大括号
+						continue
 					default:
-						return nil, c.Errf("unknown db property: %s", c.Val())
+						return nil, c.Errf("unknown db property: %s", val)
 					}
 				}
 			default:

@@ -50,7 +50,15 @@ hermes
 hermes/*
 *.db
 **/*.db
+<<<<<<< HEAD
 # CoreDNS
 /coredns/
 /coredns-*
 !COREDNS_VERSION
+=======
+coredns/**
+coredns*/**
+coredns*
+coredns/*
+coredns.*
+>>>>>>> 7734e74 (fix: plugin Error during parsing: unknown db property: {)
