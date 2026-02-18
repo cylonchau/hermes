@@ -14,9 +14,14 @@ COREDNS_VERSION := $(shell cat COREDNS_VERSION)
 modules := $(wildcard $(GOBUILD_DIR)/*)
 SUBDIRS := $(patsubst main.go,hermes,$(notdir $(modules)))
 
-.PHONY: all build coredns modules clean help test cover
+.PHONY: all build coredns modules clean help test cover lint
 
 all: modules coredns
+
+# Run linter
+lint:
+	@echo "Running golangci-lint on pkg directory..."
+	@golangci-lint run ./pkg/...
 
 # Build all modules for the current platform
 modules:
@@ -92,3 +97,4 @@ help:
 	@echo "  make help            - Show this help message"
 	@echo "  make test            - Run all unit tests with coverage summary"
 	@echo "  make cover           - Run tests and generate HTML coverage report"
+	@echo "  make lint            - Run golangci-lint for code quality check"
