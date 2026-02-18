@@ -5,14 +5,14 @@ import (
 
 	"github.com/cylonchau/hermes/pkg/app/router"
 	"github.com/cylonchau/hermes/pkg/config"
-	"github.com/gin-gonic/gin"
+	"github.com/cylonchau/hermes/pkg/logger"
 )
 
 // NewHTTPSever 启动 HTTP 管理服务
 func NewHTTPSever() error {
 	cfg := config.Get()
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)
-	fmt.Printf("Hermes HTTP server listening on %s\n", addr)
+	logger.Info("Hermes HTTP server listening on %s\n", addr)
 
 	// Initialize Gin
 	engine := gin.Default()

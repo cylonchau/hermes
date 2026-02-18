@@ -89,7 +89,8 @@ func (m *RDBStore) GetDB() *gorm.DB {
 
 // initDatabase 初始化数据库连接
 func (m *RDBStore) initDatabase() error {
-	gormLogger := logger.NewGormLogger(logger.Default())
+	sqlLogger := logger.GetLogger(logger.LoggerNameSQL)
+	gormLogger := logger.NewGormLogger(sqlLogger)
 	gormConfig := &gorm.Config{
 		Logger: gormLogger,
 	}

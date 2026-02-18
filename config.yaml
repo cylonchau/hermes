@@ -6,5 +6,24 @@ sqlite:
   max_idle_connection: "10"
 
 server:
-  log_level: debug
-  port: 8080
+  port: 10000
+
+loggers:
+  business:
+    enabled: true
+    level: debug
+    format: text
+    outputs:
+      - type: stdout
+  sql:
+    enabled: true
+    level: debug
+    format: json
+    outputs:
+      - type: file
+        file:
+          filename: logs/sql.log
+          max_size: "10M"
+          max_backups: 5
+          max_age: "7d"
+          compress: true

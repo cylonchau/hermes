@@ -2,63 +2,88 @@ package logger
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 )
 
-// LoggerType 日志驱动类型
-type LoggerType string
+// Level defines the log severity levels.
+type Level string
 
 const (
-	LoggerTypeZap     LoggerType = "zap"
-	LoggerTypeZerolog LoggerType = "zerolog"
+	LevelDebug  Level = "debug"
+	LevelInfo   Level = "info"
+	LevelWarn   Level = "warn"
+	LevelError  Level = "error"
+	LevelSilent Level = "silent"
 )
 
-// OutputType 输出类型
+// Format defines the supported log output formats.
+type Format string
+
+const (
+	FormatText Format = "text"
+	FormatJSON Format = "json"
+)
+
+// OutputType defines the supported log destinations.
 type OutputType string
 
 const (
 	OutputStdout OutputType = "stdout"
 	OutputFile   OutputType = "file"
-	OutputBoth   OutputType = "both"
+	OutputNull   OutputType = "null"
+	OutputLoki   OutputType = "loki"
 )
 
-// Level 日志级别
-type Level string
-
-const (
-	LevelDebug Level = "debug"
-	LevelInfo  Level = "info"
-	LevelWarn  Level = "warn"
-	LevelError Level = "error"
-	LevelFatal Level = "fatal"
-)
-
-// FileConfig 文件输出配置
+// FileConfig defines the configuration for file-based log rotation.
 type FileConfig struct {
-	Filename   string // 日志文件路径
-	MaxSize    int    // 单个文件最大大小(MB)
-	MaxBackups int    // 保留的旧文件最大数量
-	MaxAge     int    // 保留旧文件的最大天数
-	Compress   bool   // 是否压缩旧文件
+	Filename   string `json:"filename" yaml:"filename"`
+	MaxSize    string `json:"max_size" yaml:"max_size"` // Maximum size before rotation (e.g., "100M", "1G")
+	MaxBackups int    `json:"max_backups" yaml:"max_backups"`
+	MaxAge     string `json:"max_age" yaml:"max_age"` // Maximum retention period (e.g., "7d")
+	Compress   bool   `json:"compress" yaml:"compress"`
 }
 
-// Config 日志配置
+// OutputConfig represents a single log output destination.
+type OutputConfig struct {
+	Type string     `json:"type" yaml:"type"`
+	File FileConfig `json:"file" yaml:"file"`
+	Loki LokiConfig `json:"loki" yaml:"loki"`
+	UDP  UDPConfig  `json:"udp" yaml:"udp"`
+}
+
+// LokiConfig defines settings for pushing logs to Grafana Loki.
+type LokiConfig struct {
+	URL      string `json:"url" yaml:"url"`
+	TenantID string `json:"tenant_id" yaml:"tenant_id"`
+}
+
+// UDPConfig defines settings for remote logging via UDP (e.g., Syslog).
+type UDPConfig struct {
+	Addr string `json:"addr" yaml:"addr"`
+}
+
+// LoggerConfig defines the configuration for a specific logger pipeline.
+type LoggerConfig struct {
+	Enabled      bool           `json:"enabled" yaml:"enabled"`
+	Level        Level          `json:"level" yaml:"level"`
+	Format       Format         `json:"format" yaml:"format"`
+	Outputs      []OutputConfig `json:"outputs" yaml:"outputs"`
+	EnableCaller bool           `json:"enable_caller" yaml:"enable_caller"`
+}
+
+// Config represents the complete global logging configuration.
 type Config struct {
-	Type         LoggerType // 日志驱动类型: zap 或 zerolog
-	Level        Level      // 日志级别
-	Output       OutputType // 输出类型: stdout, file, both
-	File         FileConfig // 文件输出配置
-	EnableCaller bool       // 是否显示调用者信息
-	JSONFormat   bool       // 是否使用 JSON 格式
+	Loggers map[string]LoggerConfig `json:"loggers" yaml:"loggers"`
 }
 
-// Field 日志字段
+// Field represents a key-value pair for structured logging.
 type Field struct {
 	Key   string
 	Value interface{}
 }
 
-// Logger 统一日志接口
+// Logger is the main interface for logging operations.
 type Logger interface {
 	Debug(msg string, fields ...Field)
 	Info(msg string, fields ...Field)
@@ -66,128 +91,163 @@ type Logger interface {
 	Error(msg string, fields ...Field)
 	Fatal(msg string, fields ...Field)
 
-	With(fields ...Field) Logger // 添加字段
-	Named(name string) Logger    // 添加命名空间
-	Sync() error                 // 刷新缓冲区
-}
-
-// 字段构造函数
-func String(key, value string) Field {
-	return Field{Key: key, Value: value}
-}
-
-func Int(key string, value int) Field {
-	return Field{Key: key, Value: value}
-}
-
-func Int64(key string, value int64) Field {
-	return Field{Key: key, Value: value}
-}
-
-func Bool(key string, value bool) Field {
-	return Field{Key: key, Value: value}
-}
-
-func Float64(key string, value float64) Field {
-	return Field{Key: key, Value: value}
-}
-
-func Err(err error) Field {
-	return Field{Key: "error", Value: err}
-}
-
-func Any(key string, value interface{}) Field {
-	return Field{Key: key, Value: value}
+	With(fields ...Field) Logger
+	Named(name string) Logger
+	Sync() error
 }
 
 var (
-	defaultLogger Logger
-	once          sync.Once
-	mu            sync.RWMutex
+	registry = make(map[string]Logger)
+	mu       sync.RWMutex
 )
 
-// Initialize 初始化全局日志实例
+const (
+	LoggerNameBusiness = "business"
+	LoggerNameSQL      = "sql"
+)
+
+// Initialize sets up all configured logger instances.
 func Initialize(config Config) error {
 	mu.Lock()
 	defer mu.Unlock()
 
-	var logger Logger
-	var err error
-
-	switch config.Type {
-	case LoggerTypeZap:
-		logger, err = newZapLogger(config)
-	case LoggerTypeZerolog:
-		logger, err = newZerologLogger(config)
-	default:
-		return fmt.Errorf("unsupported logger type: %s", config.Type)
+	for name, lConfig := range config.Loggers {
+		if !lConfig.Enabled {
+			continue
+		}
+		logger, err := newSlogLogger(name, lConfig)
+		if err != nil {
+			return fmt.Errorf("failed to init logger [%s]: %w", name, err)
+		}
+		registry[name] = logger
 	}
-
-	if err != nil {
-		return fmt.Errorf("failed to initialize logger: %w", err)
-	}
-
-	defaultLogger = logger
 	return nil
 }
 
-// Default 获取默认日志实例
-func Default() Logger {
+// GetLogger retrieves a logger instance by name.
+func GetLogger(name string) Logger {
 	mu.RLock()
-	defer mu.RUnlock()
+	logger, ok := registry[name]
+	mu.RUnlock()
 
-	if defaultLogger == nil {
-		// 如果未初始化，使用默认配置
-		once.Do(func() {
-			mu.RUnlock()
-			_ = Initialize(Config{
-				Type:   LoggerTypeZap,
-				Level:  LevelInfo,
-				Output: OutputStdout,
-			})
-			mu.RLock()
+	if ok {
+		return logger
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	// Double check to prevent race conditions.
+	if l, ok := registry[name]; ok {
+		return l
+	}
+
+	// Handle default fallbacks while avoiding recursive locks.
+	targetName := name
+	if name != LoggerNameBusiness && name != LoggerNameSQL {
+		targetName = LoggerNameBusiness
+		// If Business logger is already initialized, return it.
+		if l, ok := registry[LoggerNameBusiness]; ok {
+			return l
+		}
+	}
+
+	var l Logger
+	switch targetName {
+	case LoggerNameBusiness:
+		// Default Business Logger: Text format + Stdout
+		l, _ = newSlogLogger(LoggerNameBusiness, LoggerConfig{
+			Level:   LevelInfo,
+			Format:  FormatText,
+			Outputs: []OutputConfig{{Type: string(OutputStdout)}},
+		})
+	case LoggerNameSQL:
+		// Default SQL Logger: JSON format + Discard (Null)
+		l, _ = newSlogLogger(LoggerNameSQL, LoggerConfig{
+			Level:   LevelDebug,
+			Format:  FormatJSON,
+			Outputs: []OutputConfig{{Type: string(OutputNull)}},
 		})
 	}
 
-	return defaultLogger
+	registry[targetName] = l
+	return l
 }
 
-// Debug 记录 debug 级别日志
-func Debug(msg string, fields ...Field) {
-	Default().Debug(msg, fields...)
+// Default returns the default business logger.
+func Default() Logger {
+	return GetLogger(LoggerNameBusiness)
 }
 
-// Info 记录 info 级别日志
-func Info(msg string, fields ...Field) {
-	Default().Info(msg, fields...)
+// --- Global Convenience Functions ---
+
+func Debug(msg string, fields ...Field) { Default().Debug(msg, fields...) }
+func Info(msg string, fields ...Field)  { Default().Info(msg, fields...) }
+func Warn(msg string, fields ...Field)  { Default().Warn(msg, fields...) }
+func Error(msg string, fields ...Field) { Default().Error(msg, fields...) }
+func Fatal(msg string, fields ...Field) { Default().Fatal(msg, fields...) }
+
+func With(fields ...Field) Logger { return Default().With(fields...) }
+func Named(name string) Logger    { return Default().Named(name) }
+func Sync() error                 { return Default().Sync() }
+
+// --- Helper Functions ---
+
+func String(key, value string) Field          { return Field{Key: key, Value: value} }
+func Int(key string, value int) Field         { return Field{Key: key, Value: value} }
+func Int64(key string, value int64) Field     { return Field{Key: key, Value: value} }
+func Bool(key string, value bool) Field       { return Field{Key: key, Value: value} }
+func Err(err error) Field                     { return Field{Key: "error", Value: err} }
+func Any(key string, value interface{}) Field { return Field{Key: key, Value: value} }
+
+// ParseSizeMB converts a human-readable size string (e.g., "1G", "10M") to megabytes.
+func ParseSizeMB(s string) int {
+	if s == "" {
+		return 100 // Default to 100MB
+	}
+	var res int
+	var unit string
+	_, _ = fmt.Sscanf(s, "%d%s", &res, &unit)
+
+	switch strings.ToLower(unit) {
+	case "g", "gb":
+		return res * 1024
+	case "m", "mb":
+		return res
+	case "k", "kb":
+		if res > 0 && res < 1024 {
+			return 1 // Minimum 1MB
+		}
+		return res / 1024
+	default:
+		return res
+	}
 }
 
-// Warn 记录 warn 级别日志
-func Warn(msg string, fields ...Field) {
-	Default().Warn(msg, fields...)
-}
+// ParseAgeDays converts a human-readable duration string (e.g., "7d", "1m") to days.
+func ParseAgeDays(s string) int {
+	if s == "" {
+		return 7 // Default to 7 days
+	}
+	var res int
+	var unit string
+	_, _ = fmt.Sscanf(s, "%d%s", &res, &unit)
 
-// Error 记录 error 级别日志
-func Error(msg string, fields ...Field) {
-	Default().Error(msg, fields...)
-}
-
-// Fatal 记录 fatal 级别日志并退出程序
-func Fatal(msg string, fields ...Field) {
-	Default().Fatal(msg, fields...)
-}
-
-// With 添加字段
-func With(fields ...Field) Logger {
-	return Default().With(fields...)
-}
-
-// Named 添加命名空间
-func Named(name string) Logger {
-	return Default().Named(name)
-}
-
-// Sync 刷新缓冲区
-func Sync() error {
-	return Default().Sync()
+	switch strings.ToLower(unit) {
+	case "y", "year":
+		return res * 365
+	case "m", "month":
+		return res * 30
+	case "w", "week":
+		return res * 7
+	case "d", "day":
+		return res
+	case "h", "hour":
+		if res > 0 && res < 24 {
+			return 1 // Minimum 1 day
+		}
+		return res / 24
+	default:
+		return res
+	}
 }
