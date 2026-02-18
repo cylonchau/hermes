@@ -89,6 +89,10 @@ func (o *Options) Complete() error {
 		if err != nil {
 			return err
 		}
+		// Initialize the logger after config is loaded
+		if err := logger.Initialize(logger.Config{Loggers: config.CONFIG.Loggers}); err != nil {
+			return fmt.Errorf("failed to initialize logger: %w", err)
+		}
 	}
 
 	return nil

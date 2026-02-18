@@ -4,24 +4,25 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/cylonchau/hermes/pkg/logger"
 	"github.com/cylonchau/hermes/pkg/store"
 	"github.com/spf13/viper"
 )
 
 // Config 全局配置结构
 type Config struct {
-	AppName        string               `mapstructure:"app_name"`
-	DatabaseDriver string               `mapstructure:"database_driver"`
-	MySQL          store.DatabaseConfig `mapstructure:"mysql"`
-	SQLite         store.DatabaseConfig `mapstructure:"sqlite"`
-	Database       store.DatabaseConfig `mapstructure:"database"` // 保留旧的兼容性
-	Server         ServerConfig         `mapstructure:"server"`
+	AppName        string                         `mapstructure:"app_name"`
+	DatabaseDriver string                         `mapstructure:"database_driver"`
+	MySQL          store.DatabaseConfig           `mapstructure:"mysql"`
+	SQLite         store.DatabaseConfig           `mapstructure:"sqlite"`
+	Database       store.DatabaseConfig           `mapstructure:"database"` // 保留旧的兼容性
+	Server         ServerConfig                   `mapstructure:"server"`
+	Loggers        map[string]logger.LoggerConfig `mapstructure:"loggers"`
 }
 
 // ServerConfig 服务器基础配置
 type ServerConfig struct {
-	LogLevel string `mapstructure:"log_level"`
-	Port     int    `mapstructure:"port"`
+	Port int `mapstructure:"port"`
 }
 
 var (

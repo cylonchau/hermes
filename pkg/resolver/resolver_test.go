@@ -78,7 +78,7 @@ func TestResolver_Resolve(t *testing.T) {
 
 	t.Run("Resolve A Record", func(t *testing.T) {
 		mockRepo.QueryARecordsFn = func(ctx context.Context, zoneName, recordName string) ([]*model.ARecord, error) {
-			if zoneName == "test.com" && recordName == "www" {
+			if zoneName == "test.com." && recordName == "www.test.com." {
 				return []*model.ARecord{
 					{IP: 0x01020304, TTL: 3600},
 				}, nil
@@ -112,7 +112,7 @@ func TestResolver_Resolve(t *testing.T) {
 			return nil, nil
 		}
 		mockRepo.QuerySOARecordFn = func(ctx context.Context, zoneName string) (*model.SOARecord, error) {
-			if zoneName == "test.com" {
+			if zoneName == "test.com." {
 				return &model.SOARecord{
 					PrimaryNS: "ns1.test.com.",
 					MBox:      "admin.test.com.",
