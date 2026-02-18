@@ -13,7 +13,7 @@ COREDNS_VERSION := $(shell cat COREDNS_VERSION)
 modules := $(wildcard $(GOBUILD_DIR)/*)
 SUBDIRS := $(patsubst main.go,hermes,$(notdir $(modules)))
 
-.PHONY: all build coredns modules clean help
+.PHONY: all build coredns modules clean help test cover
 
 all: modules coredns
 
@@ -62,9 +62,23 @@ build:
 	fi
 	@chmod +x scripts/build.sh && scripts/build.sh $(module)
 
+# Run pkg tests with coverage summary
+test:
+	@echo "Running pkg unit tests..."
+	@$(GOCMD) test -v -cover ./pkg/...
+
+# Run pkg tests and generate HTML coverage report
+cover:
+	@echo "Generating coverage report for pkg..."
+	@$(GOCMD) test -v -coverprofile=coverage.out ./pkg/...
+	@$(GOCMD) tool cover -func=coverage.out
+	@echo "HTML report generated at coverage.html"
+	@$(GOCMD) tool cover -html=coverage.out -o coverage.html
+
 clean:
 	@echo "Cleaning output directory..."
 	@rm -rf $(OUT_DIR)
+	@rm -f coverage.out coverage.html
 	@echo "Done."
 
 help:
@@ -75,3 +89,5 @@ help:
 	@echo "  make build module=X  - Build a specific module (e.g., make build module=hermes)"
 	@echo "  make clean           - Remove $(OUT_DIR) directory"
 	@echo "  make help            - Show this help message"
+	@echo "  make test            - Run all unit tests with coverage summary"
+	@echo "  make cover           - Run tests and generate HTML coverage report"

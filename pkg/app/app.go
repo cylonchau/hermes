@@ -2,8 +2,8 @@ package app
 
 import (
 	"fmt"
-	"net/http"
 
+	"github.com/cylonchau/hermes/pkg/app/router"
 	"github.com/cylonchau/hermes/pkg/config"
 	"github.com/cylonchau/hermes/pkg/logger"
 )
@@ -14,6 +14,12 @@ func NewHTTPSever() error {
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)
 	logger.Info("Hermes HTTP server listening on %s\n", addr)
 
-	// TODO: 注册路由和处理器
-	return http.ListenAndServe(addr, nil)
+	// Initialize Gin
+	engine := gin.Default()
+
+	// Register Routers
+	router.RegisteredRouter(engine)
+
+	// Start Server
+	return engine.Run(addr)
 }

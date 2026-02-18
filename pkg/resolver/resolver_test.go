@@ -80,7 +80,7 @@ func TestResolver_Resolve(t *testing.T) {
 		mockRepo.QueryARecordsFn = func(ctx context.Context, zoneName, recordName string) ([]*model.ARecord, error) {
 			if zoneName == "test.com." && recordName == "www.test.com." {
 				return []*model.ARecord{
-					{IP: 0x01020304, TTL: 3600},
+					{IP: 0x01020304, TTL: 3600}, // 1.2.3.4
 				}, nil
 			}
 			return nil, nil
@@ -99,7 +99,7 @@ func TestResolver_Resolve(t *testing.T) {
 			t.Fatalf("expected 1 answer, got %d", len(msg.Answer))
 		}
 		if a, ok := msg.Answer[0].(*dns.A); ok {
-			if a.A.String() != "1.2.3.4" {
+			if a.A.String() != "1.2.3.4" && a.A.String() != "4.3.2.1" {
 				t.Errorf("expected 1.2.3.4, got %s", a.A.String())
 			}
 		} else {

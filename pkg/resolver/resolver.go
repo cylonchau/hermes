@@ -104,7 +104,7 @@ func (r *Resolver) Resolve(ctx context.Context, state request.Request) (*dns.Msg
 		}
 	case dns.TypeSOA:
 		rec, err := r.dao.QuerySOARecord(ctx, zone)
-		if err == nil {
+		if err == nil && rec != nil {
 			m.Answer = append(m.Answer, &dns.SOA{
 				Hdr:     dns.RR_Header{Name: dns.Fqdn(zone), Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: rec.TTL},
 				Ns:      dns.Fqdn(rec.PrimaryNS),
