@@ -1,4 +1,5 @@
 # Build configuration
+.DEFAULT_GOAL := help
 GOCMD=go
 GOBUILD=$(GOCMD) build
 GOBUILD_DIR=cmd
