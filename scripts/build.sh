@@ -3,7 +3,7 @@
 PROJECT_ROOT=$(cd $(dirname ${BASH_SOURCE[0]})/..; pwd)
 set -e
 
-OUT_DIR="target"
+OUT_DIR="target/bin"
 GO_CMD=$(command -v go || echo "")
 
 if [ -z "$GO_CMD" ]; then

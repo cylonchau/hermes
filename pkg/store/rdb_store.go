@@ -18,7 +18,7 @@ import (
 
 var (
 	// 单例模式
-	instance *RDBStore
+	instance Store
 	initOnce sync.Once
 )
 
@@ -36,6 +36,17 @@ func GetInstance() Store {
 		instance = &RDBStore{}
 	})
 	return instance
+}
+
+// ResetInstance 重置单例（主要用于单元测试注入 Mock）
+func ResetInstance(s Store) {
+	instance = s
+	if s != nil {
+		// 确保 GetInstance 不会再通过 initOnce 初始化并覆盖 instance
+		initOnce.Do(func() {})
+	} else {
+		initOnce = sync.Once{}
+	}
 }
 
 // Initialize 初始化数据库连接

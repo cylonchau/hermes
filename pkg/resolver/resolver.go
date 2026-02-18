@@ -104,7 +104,7 @@ func (r *Resolver) Resolve(ctx context.Context, state request.Request) (*dns.Msg
 		}
 	case dns.TypeSOA:
 		rec, err := r.dao.QuerySOARecord(ctx, zone)
-		if err == nil {
+		if err == nil && rec != nil {
 			m.Answer = append(m.Answer, &dns.SOA{
 				Hdr:     dns.RR_Header{Name: dns.Fqdn(zone), Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: rec.TTL},
 				Ns:      dns.Fqdn(rec.PrimaryNS),
@@ -157,7 +157,7 @@ func (r *Resolver) parseQuery(ctx context.Context, qName string) (zone, name str
 // handleNoData 处理无数据情况，补充 SOA 到 Authority 段
 func (r *Resolver) handleNoData(ctx context.Context, zone string, m *dns.Msg) (*dns.Msg, error) {
 	rec, err := r.dao.QuerySOARecord(ctx, zone)
-	if err == nil {
+	if err == nil && rec != nil {
 		m.Ns = append(m.Ns, &dns.SOA{
 			Hdr:     dns.RR_Header{Name: dns.Fqdn(zone), Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: rec.TTL},
 			Ns:      dns.Fqdn(rec.PrimaryNS),
