@@ -10,10 +10,12 @@ type Record struct {
 	Tags     string `gorm:"size:500;comment:标签，用逗号分隔;" json:"tags"`                         // 标签，用逗号分隔
 	Source   string `gorm:"size:100;comment:数据来源;" json:"source"`                           // 数据来源
 	IsActive bool   `gorm:"default:true;comment:该记录是否活跃;" json:"is_active"`                 // 该记录是否活跃
+	ViewID   int64  `gorm:"type:bigint;index;comment:关联view表的id;" json:"view_id"`           // 关联的view_id
 
 	// 关联关系
 	// 这里全部使用了指针类型，对序列化更友好
 	Zone        *Zone        `gorm:"foreignKey:ZoneID" json:"zone,omitempty"`
+	View        *View        `gorm:"foreignKey:ViewID" json:"view,omitempty"`
 	ARecord     *ARecord     `gorm:"foreignKey:RecordID" json:"a_record,omitempty"`
 	AAAARecord  *AAAARecord  `gorm:"foreignKey:RecordID" json:"aaaa_record,omitempty"`
 	CNAMERecord *CNAMERecord `gorm:"foreignKey:RecordID" json:"cname_record,omitempty"`

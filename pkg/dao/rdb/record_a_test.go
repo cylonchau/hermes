@@ -23,7 +23,7 @@ func TestRecordDAO_Mock_CreateARecord(t *testing.T) {
 	mock.ExpectBegin()
 	// Create base record
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `record`")).
-		WithArgs(baseRecord.ZoneID, baseRecord.Name, baseRecord.Type, baseRecord.TTL, baseRecord.Remark, baseRecord.Tags, baseRecord.Source, baseRecord.IsActive).
+		WithArgs(baseRecord.ZoneID, baseRecord.Name, baseRecord.Type, baseRecord.TTL, baseRecord.Remark, baseRecord.Tags, baseRecord.Source, baseRecord.IsActive, baseRecord.ViewID).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	// Create A record (RecordID is populated from baseRecord.ID)
@@ -47,8 +47,8 @@ func TestRecordDAO_Mock_GetARecordByID(t *testing.T) {
 	aRows := sqlmock.NewRows([]string{"id", "record_id", "ip"}).
 		AddRow(1, 1, 16843009)
 
-	recordRows := sqlmock.NewRows([]string{"id", "name"}).
-		AddRow(1, "a")
+	recordRows := sqlmock.NewRows([]string{"id", "name", "view_id"}).
+		AddRow(1, "a", 0)
 
 	mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `record_a` WHERE record_id = ? ORDER BY `record_a`.`id` LIMIT ?")).
 		WithArgs(1, 1).
@@ -60,7 +60,7 @@ func TestRecordDAO_Mock_GetARecordByID(t *testing.T) {
 
 	res, err := dao.GetARecordByID(ctx, 1)
 	assert.NoError(t, err)
-	assert.Equal(t, int32(16843009), res.IP)
+	assert.Equal(t, uint32(16843009), res.IP)
 	assert.Equal(t, "a", res.Record.Name)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }

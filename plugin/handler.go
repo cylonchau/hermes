@@ -21,6 +21,7 @@ type Hermes struct {
 	Next           plugin.Handler
 	DatabaseConfig store.DatabaseConfig
 	Resolver       *resolver.Resolver
+	GeoIPPath      string
 }
 
 // ServeDNS 处理 DNS 请求

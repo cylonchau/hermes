@@ -18,12 +18,12 @@ func TestViewDAO_Mock_CRUD(t *testing.T) {
 	dao := NewViewDAO(db)
 	ctx := context.Background()
 
-	view := &model.View{Name: "default"}
+	view := &model.View{Name: "default", Category: "acl"}
 
 	// 1. Create
 	mock.ExpectBegin()
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `view`")).
-		WithArgs(view.Name, sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WithArgs(view.Name, view.Category, view.Value, view.Priority, sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
@@ -31,8 +31,8 @@ func TestViewDAO_Mock_CRUD(t *testing.T) {
 	assert.NoError(t, err)
 
 	// 2. GetByID
-	rows := sqlmock.NewRows([]string{"id", "name", "created_at", "updated_at"}).
-		AddRow(1, "default", time.Now(), time.Now())
+	rows := sqlmock.NewRows([]string{"id", "name", "category", "value", "priority", "created_at", "updated_at"}).
+		AddRow(1, "default", "", "", 0, time.Now(), time.Now())
 
 	mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `view` WHERE `view`.`id` = ? ORDER BY `view`.`id` LIMIT ?")).
 		WithArgs(1, 1).
