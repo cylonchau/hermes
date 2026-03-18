@@ -33,8 +33,17 @@ func setup(c *caddy.Controller) error {
 		if err != nil {
 			return err
 		}
+
+		var geoip resolver.GeoIPProvider
+		if h.GeoIPPath != "" {
+			geoip, err = resolver.NewMaxMindProvider(h.GeoIPPath)
+			if err != nil {
+				return plugin.Error(pluginName, err)
+			}
+		}
+
 		// 初始化解析器
-		h.Resolver = resolver.NewResolver(rdb.NewRecordDAO(h.GetDB()))
+		h.Resolver = resolver.NewResolver(rdb.NewRecordDAO(h.GetDB()), h.GetDB(), geoip)
 		return nil
 	})
 
@@ -130,6 +139,11 @@ func parseHermes(c *caddy.Controller) (*Hermes, error) {
 						return nil, c.Errf("unknown db property: %s", val)
 					}
 				}
+			case "geoip":
+				if !c.NextArg() {
+					return nil, c.ArgErr()
+				}
+				h.GeoIPPath = c.Val()
 			default:
 				return nil, c.Errf("unknown property: %s", c.Val())
 			}

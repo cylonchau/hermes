@@ -14,8 +14,15 @@ type NSRecordRouter struct {
 }
 
 func (nr *NSRecordRouter) List(c *gin.Context) {
-	var records []model.NSRecord
-	if err := model.DB.Preload("Record.Zone").Find(&records).Error; err != nil {
+	viewIDStr := c.Query("view_id")
+	var viewID *int64
+	if viewIDStr != "" {
+		id, _ := strconv.ParseInt(viewIDStr, 10, 64)
+		viewID = &id
+	}
+
+	records, err := nr.DAO.ListNSRecords(c.Request.Context(), viewID)
+	if err != nil {
 		query.InternalError(c, err)
 		return
 	}

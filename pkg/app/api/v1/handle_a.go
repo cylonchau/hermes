@@ -14,11 +14,15 @@ type ARecordRouter struct {
 }
 
 func (ar *ARecordRouter) List(c *gin.Context) {
-	// Note: Generic list for A records without filter is not directly in DAO GetARecords.
-	// GetARecords expects zoneName and recordName.
-	// For now, let's keep it simple or expand DAO later.
-	var records []model.ARecord
-	if err := model.DB.Preload("Record.Zone").Find(&records).Error; err != nil {
+	viewIDStr := c.Query("view_id")
+	var viewID *int64
+	if viewIDStr != "" {
+		id, _ := strconv.ParseInt(viewIDStr, 10, 64)
+		viewID = &id
+	}
+
+	records, err := ar.DAO.ListARecords(c.Request.Context(), viewID)
+	if err != nil {
 		query.InternalError(c, err)
 		return
 	}

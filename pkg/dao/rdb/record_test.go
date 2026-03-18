@@ -27,7 +27,7 @@ func TestRecordDAO_Mock_CreateRecord(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `record`")).
-		WithArgs(record.ZoneID, record.Name, record.Type, record.TTL, record.Remark, record.Tags, record.Source, record.IsActive).
+		WithArgs(record.ZoneID, record.Name, record.Type, record.TTL, record.Remark, record.Tags, record.Source, record.IsActive, record.ViewID).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
@@ -43,8 +43,8 @@ func TestRecordDAO_Mock_GetRecordByID(t *testing.T) {
 	ctx := context.Background()
 
 	// Row for Record
-	recordRows := sqlmock.NewRows([]string{"id", "zone_id", "name", "type", "is_active"}).
-		AddRow(1, 1, "www", "A", true)
+	recordRows := sqlmock.NewRows([]string{"id", "zone_id", "name", "type", "is_active", "view_id"}).
+		AddRow(1, 1, "www", "A", true, 0)
 
 	// Row for Zone (Preload)
 	zoneRows := sqlmock.NewRows([]string{"id", "name"}).
@@ -73,9 +73,9 @@ func TestRecordDAO_Mock_GetRecordsByZone(t *testing.T) {
 	dao := NewRecordDAO(db)
 	ctx := context.Background()
 
-	recordRows := sqlmock.NewRows([]string{"id", "zone_id", "name"}).
-		AddRow(1, 1, "www").
-		AddRow(2, 1, "mail")
+	recordRows := sqlmock.NewRows([]string{"id", "zone_id", "name", "view_id"}).
+		AddRow(1, 1, "www", 0).
+		AddRow(2, 1, "mail", 0)
 
 	zoneRows := sqlmock.NewRows([]string{"id", "name"}).
 		AddRow(1, "example.com")

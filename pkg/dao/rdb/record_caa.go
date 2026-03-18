@@ -65,3 +65,16 @@ func (dao *RecordDAO) DeleteCAARecord(ctx context.Context, recordID uint) error 
 		return tx.Delete(&model.Record{}, recordID).Error
 	})
 }
+
+// ListCAARecords 高级列表查询，支持视图筛选
+func (dao *RecordDAO) ListCAARecords(ctx context.Context, viewID *int64) ([]model.CAARecord, error) {
+	var records []model.CAARecord
+	db := dao.db.WithContext(ctx).Preload("Record.Zone").Preload("Record.View")
+
+	if viewID != nil {
+		db = db.Joins("JOIN record ON record.id = record_caa.record_id").Where("record.view_id = ?", *viewID)
+	}
+
+	err := db.Find(&records).Error
+	return records, err
+}

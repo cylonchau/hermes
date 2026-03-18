@@ -93,3 +93,19 @@ func (dao *RecordDAO) BatchCreateRecords(ctx context.Context, records []*model.R
 func (dao *RecordDAO) BatchDeleteRecords(ctx context.Context, recordIDs []int64) error {
 	return dao.db.WithContext(ctx).Delete(&model.Record{}, recordIDs).Error
 }
+
+// ListRecords 获取记录列表，支持按 zone 和 view 筛选
+func (dao *RecordDAO) ListRecords(ctx context.Context, zoneID int64, viewID *int64) ([]model.Record, error) {
+	var records []model.Record
+	db := dao.db.WithContext(ctx).Preload("Zone").Preload("View")
+
+	if zoneID > 0 {
+		db = db.Where("zone_id = ?", zoneID)
+	}
+	if viewID != nil {
+		db = db.Where("view_id = ?", *viewID)
+	}
+
+	err := db.Find(&records).Error
+	return records, err
+}
