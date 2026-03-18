@@ -14,25 +14,18 @@ type RecordRouter struct {
 }
 
 func (rr *RecordRouter) List(c *gin.Context) {
-	// Extract zone_id from query if present
-	zoneIDStr := c.Query("zone_id")
-	if zoneIDStr != "" {
-		zoneID, _ := strconv.ParseInt(zoneIDStr, 10, 64)
-		records, err := rr.DAO.GetRecordsByZone(c.Request.Context(), zoneID)
-		if err != nil {
-			query.InternalError(c, err)
-			return
-		}
-		query.SuccessResponse(c, nil, records)
-		return
+	var zoneID int64
+	var viewID *int64
+	if zoneIDStr := c.Query("zone_id"); zoneIDStr != "" {
+		zoneID, _ = strconv.ParseInt(zoneIDStr, 10, 64)
+	}
+	if viewIDStr := c.Query("view_id"); viewIDStr != "" {
+		id, _ := strconv.ParseInt(viewIDStr, 10, 64)
+		viewID = &id
 	}
 
-	// Default to listing all? The DAO doesn't have a generic GetAll for Records yet.
-	// But the generic Record model might not be intended for a full list without filter.
-	// For now, let's use model.DB if DAO doesn't support it, or add it to DAO.
-	// Looking at DAO, it seems designed for zone-based access.
-	var records []model.Record
-	if err := model.DB.Preload("Zone").Find(&records).Error; err != nil {
+	records, err := rr.DAO.ListRecords(c.Request.Context(), zoneID, viewID)
+	if err != nil {
 		query.InternalError(c, err)
 		return
 	}

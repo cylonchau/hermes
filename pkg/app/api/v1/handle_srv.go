@@ -14,8 +14,15 @@ type SRVRecordRouter struct {
 }
 
 func (sr *SRVRecordRouter) List(c *gin.Context) {
-	var records []model.SRVRecord
-	if err := model.DB.Preload("Record.Zone").Find(&records).Error; err != nil {
+	viewIDStr := c.Query("view_id")
+	var viewID *int64
+	if viewIDStr != "" {
+		id, _ := strconv.ParseInt(viewIDStr, 10, 64)
+		viewID = &id
+	}
+
+	records, err := sr.DAO.ListSRVRecords(c.Request.Context(), viewID)
+	if err != nil {
 		query.InternalError(c, err)
 		return
 	}

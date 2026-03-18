@@ -65,3 +65,16 @@ func (dao *RecordDAO) DeleteMXRecord(ctx context.Context, recordID uint) error {
 		return tx.Delete(&model.Record{}, recordID).Error
 	})
 }
+
+// ListMXRecords 高级列表查询，支持视图筛选
+func (dao *RecordDAO) ListMXRecords(ctx context.Context, viewID *int64) ([]model.MXRecord, error) {
+	var records []model.MXRecord
+	db := dao.db.WithContext(ctx).Preload("Record.Zone").Preload("Record.View")
+
+	if viewID != nil {
+		db = db.Joins("JOIN record ON record.id = record_mx.record_id").Where("record.view_id = ?", *viewID)
+	}
+
+	err := db.Find(&records).Error
+	return records, err
+}

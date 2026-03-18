@@ -14,8 +14,15 @@ type AAAARecordRouter struct {
 }
 
 func (ar *AAAARecordRouter) List(c *gin.Context) {
-	var records []model.AAAARecord
-	if err := model.DB.Preload("Record.Zone").Find(&records).Error; err != nil {
+	viewIDStr := c.Query("view_id")
+	var viewID *int64
+	if viewIDStr != "" {
+		id, _ := strconv.ParseInt(viewIDStr, 10, 64)
+		viewID = &id
+	}
+
+	records, err := ar.DAO.ListAAAARecords(c.Request.Context(), viewID)
+	if err != nil {
 		query.InternalError(c, err)
 		return
 	}

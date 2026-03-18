@@ -65,3 +65,16 @@ func (dao *RecordDAO) DeleteCNAMERecord(ctx context.Context, recordID uint) erro
 		return tx.Delete(&model.Record{}, recordID).Error
 	})
 }
+
+// ListCNAMERecords 高级列表查询，支持视图筛选
+func (dao *RecordDAO) ListCNAMERecords(ctx context.Context, viewID *int64) ([]model.CNAMERecord, error) {
+	var records []model.CNAMERecord
+	db := dao.db.WithContext(ctx).Preload("Record.Zone").Preload("Record.View")
+
+	if viewID != nil {
+		db = db.Joins("JOIN record ON record.id = record_cname.record_id").Where("record.view_id = ?", *viewID)
+	}
+
+	err := db.Find(&records).Error
+	return records, err
+}
