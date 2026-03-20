@@ -20,28 +20,28 @@ type GeoIPProvider interface {
 	Lookup(ip string) (country, region string, err error)
 }
 
-// Resolver DNS 解析核心处理器
+// Resolver is the core DNS resolving processor
 type Resolver struct {
 	dao   rdb.DNSQueryRepository
 	db    *gorm.DB
 	geoip GeoIPProvider
 }
 
-// NewResolver 创建解析器实例
+// NewResolver creates a resolver instance
 func NewResolver(dao rdb.DNSQueryRepository, db *gorm.DB, geoip GeoIPProvider) *Resolver {
 	return &Resolver{dao: dao, db: db, geoip: geoip}
 }
 
-// Resolve 处理 DNS 解析逻辑
+// Resolve handles DNS resolution logic
 func (r *Resolver) Resolve(ctx context.Context, state request.Request) (*dns.Msg, error) {
 	qName := state.Name()
 	qType := state.QType()
 	clientIP := state.IP()
 
-	// 1. 识别视图
+	// 1. Identify view
 	viewID, _ := r.matchView(ctx, clientIP)
 
-	// 2. 查找最匹配的 Zone
+	// 2. Find most matching Zone
 	zone, name, err := r.parseQuery(ctx, qName)
 	if err != nil {
 		return nil, err
@@ -51,7 +51,7 @@ func (r *Resolver) Resolve(ctx context.Context, state request.Request) (*dns.Msg
 	m.SetReply(state.Req)
 	m.Authoritative = true
 
-	// 3. 根据查询类型检索记录
+	// 3. Retrieve records based on query type
 	switch qType {
 	case dns.TypeA:
 		records, err := r.dao.QueryARecords(ctx, zone, name, viewID)
@@ -145,7 +145,7 @@ func (r *Resolver) Resolve(ctx context.Context, state request.Request) (*dns.Msg
 		}
 	}
 
-	// 4. 如果未找到记录且是 NXDOMAIN 情况
+	// 4. If record is not found or is NXDOMAIN state
 	if len(m.Answer) == 0 {
 		return r.handleNoData(ctx, zone, viewID, m)
 	}
@@ -153,25 +153,25 @@ func (r *Resolver) Resolve(ctx context.Context, state request.Request) (*dns.Msg
 	return m, nil
 }
 
-// parseQuery 解析查询域名，将其拆分为 Zone 和 Record Name
+// parseQuery parses query domain name, splitting into Zone and Record Name
 func (r *Resolver) parseQuery(ctx context.Context, qName string) (zone, name string, err error) {
-	// 暂时使用简单的点号拆分方案
+	// Currently uses a simple dot split approach
 	labels := dns.SplitDomainName(qName)
 	if len(labels) < 2 {
 		return "", "", fmt.Errorf("invalid domain name: %s", qName)
 	}
 
-	// 使用 FQDN 格式（带末尾点号）以匹配数据库中的存储规范
+	// Use FQDN format (with trailing dot) to match database storage spec
 	zone = strings.Join(labels[len(labels)-2:], ".") + "."
 	name = qName
 
 	return zone, name, nil
 }
 
-// handleNoData 处理无数据情况，补充 SOA 到 Authority 段
+// handleNoData handles NO DATA states appending SOA to Authority section
 func (r *Resolver) handleNoData(ctx context.Context, zone string, viewID int64, m *dns.Msg) (*dns.Msg, error) {
 	rec, err := r.dao.QuerySOARecord(ctx, zone, viewID)
-	if err == nil && rec != nil {
+	if err == nil && rec != nil && rec.ID > 0 {
 		m.Ns = append(m.Ns, &dns.SOA{
 			Hdr:     dns.RR_Header{Name: dns.Fqdn(zone), Rrtype: dns.TypeSOA, Class: dns.ClassINET, Ttl: rec.TTL},
 			Ns:      dns.Fqdn(rec.PrimaryNS),
@@ -182,14 +182,19 @@ func (r *Resolver) handleNoData(ctx context.Context, zone string, viewID int64, 
 			Expire:  rec.Expire,
 			Minttl:  rec.MinTTL,
 		})
+	} else {
+		// Explicitly mark: completely absent within server authority
+		m.Rcode = dns.RcodeNameError
 	}
 	return m, nil
 }
 
-// matchView 根据客户端 IP 匹配视图
+
+
+// matchView matches View based on client IP
 func (r *Resolver) matchView(ctx context.Context, clientIP string) (int64, error) {
-	// 1. 获取所有视图并按优先级排序
-	// 注意：这里后续应该增加缓存机制，避免每次查询都扫库
+	// 1. Fetch all views and sort by priority
+	// Note: cache support should be added later to avoid full-scans
 	var views []model.View
 	db := r.db
 	if db == nil {
@@ -208,11 +213,11 @@ func (r *Resolver) matchView(ctx context.Context, clientIP string) (int64, error
 		return 0, err
 	}
 
-	// 2. 遍历视图进行匹配
+	// 2. Traverse views for match
 	for _, v := range views {
 		switch v.Category {
 		case "acl":
-			// 处理 CIDR 列表（支持逗号分隔）
+			// Handle CIDR lists (supports comma separated)
 			cidrs := strings.Split(v.Value, ",")
 			for _, cidrStr := range cidrs {
 				cidrStr = strings.TrimSpace(cidrStr)
@@ -235,8 +240,8 @@ func (r *Resolver) matchView(ctx context.Context, clientIP string) (int64, error
 				continue
 			}
 
-			// 支持国家代码 (如 CN) 或 城市/区域代码 (如 CN-GD)
-			// 注意：具体的 Value 定义需要与 GeoIP 数据源对齐
+			// Supports country code (e.g., CN) or city/region code (e.g., CN-GD)
+			// Note: Value definitions must align with GeoIP datasource
 			if v.Value != "" && (v.Value == country || v.Value == country+"-"+region || v.Value == region) {
 				return v.ID, nil
 			}

@@ -88,10 +88,10 @@ func TestRecordDAO_Mock_ListAAAARecords(t *testing.T) {
 	mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `zone` WHERE `zone`.`id` = ?")).
 		WithArgs(int64(5)).WillReturnRows(zoneRows)
 
-	// 4. 执行
+	// 4. Execute
 	res, err := dao.ListAAAARecords(ctx, &viewID)
 
-	// 5. 验证
+	// 5. Verify
 	assert.NoError(t, err)
 	assert.Len(t, res, 1)
 	assert.Equal(t, "www", res[0].Record.Name)

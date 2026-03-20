@@ -126,6 +126,7 @@ func TestResolver_Resolve(t *testing.T) {
 	mockRepo := &MockDNSQueryRepository{}
 	db, _, _ := setupMockDB() // We need a GORM DB for matchView
 	r := NewResolver(mockRepo, db, nil)
+
 	ctx := context.Background()
 	mockW := &MockResponseWriter{RemoteIP: net.ParseIP("127.0.0.1")}
 

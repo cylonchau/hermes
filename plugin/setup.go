@@ -8,11 +8,12 @@ import (
 	"github.com/coredns/coredns/plugin"
 
 	"github.com/cylonchau/hermes/pkg/dao/rdb"
+	"github.com/cylonchau/hermes/pkg/dao/memory"
 	"github.com/cylonchau/hermes/pkg/resolver"
 	"github.com/cylonchau/hermes/pkg/store"
 )
 
-// init 注册插件
+// init registers the plugin
 func init() {
 	caddy.RegisterPlugin(pluginName, caddy.Plugin{
 		ServerType: "dns",
@@ -20,14 +21,14 @@ func init() {
 	})
 }
 
-// setup 解析 Corefile 配置
+// setup parses Corefile configuration
 func setup(c *caddy.Controller) error {
 	h, err := parseHermes(c)
 	if err != nil {
 		return plugin.Error(pluginName, err)
 	}
 
-	// 注册启动和关闭钩子
+	// Register startup and shutdown hooks
 	c.OnStartup(func() error {
 		err := h.initAdvancedDBPool()
 		if err != nil {
@@ -42,8 +43,15 @@ func setup(c *caddy.Controller) error {
 			}
 		}
 
-		// 初始化解析器
-		h.Resolver = resolver.NewResolver(rdb.NewRecordDAO(h.GetDB()), h.GetDB(), geoip)
+		// Initialize resolver
+		cacheSize := 32 * 1024 * 1024 // Default 32MB L1 Cache
+		if h.CacheSizeMB > 0 {
+			cacheSize = h.CacheSizeMB * 1024 * 1024
+		}
+		cache := memory.NewCacheDAO(cacheSize)
+		rdbDAO := rdb.NewRecordDAO(h.GetDB())
+		cachedDAO := rdb.NewCachedDNSQueryRepository(rdbDAO, cache) // Mount L1 memory cache proxy
+		h.Resolver = resolver.NewResolver(cachedDAO, h.GetDB(), geoip)
 		return nil
 	})
 
@@ -59,7 +67,7 @@ func setup(c *caddy.Controller) error {
 	return nil
 }
 
-// parseHermes 解析 hermes 配置块
+// parseHermes parses hermes configuration block
 func parseHermes(c *caddy.Controller) (*Hermes, error) {
 	h := &Hermes{}
 
@@ -82,7 +90,7 @@ func parseHermes(c *caddy.Controller) (*Hermes, error) {
 					return nil, c.Errf("unsupported database type: %s", dbTypeStr)
 				}
 
-				// 解析数据库子块
+				// Parse database sub-block
 				for c.NextBlock() {
 					val := c.Val()
 					switch val {
@@ -133,12 +141,21 @@ func parseHermes(c *caddy.Controller) (*Hermes, error) {
 						}
 						h.DatabaseConfig.MaxIdleConnection = c.Val()
 					case "{", "}":
-						// 容错处理：显式忽略大括号
+						// Fault tolerance: explicitly ignore braces
 						continue
 					default:
 						return nil, c.Errf("unknown db property: %s", val)
 					}
 				}
+			case "cache_size":
+				if !c.NextArg() {
+					return nil, c.ArgErr()
+				}
+				size, err := strconv.Atoi(c.Val())
+				if err != nil {
+					return nil, c.Errf("invalid cache_size value: %s", c.Val())
+				}
+				h.CacheSizeMB = size
 			case "geoip":
 				if !c.NextArg() {
 					return nil, c.ArgErr()
