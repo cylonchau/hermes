@@ -1,0 +1,11 @@
+.:1053 {
+    hermes {
+        cache_size 200
+        db sqlite {
+            file hermes
+        }
+    }
+    log
+    errors
+}
+

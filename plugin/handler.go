@@ -16,15 +16,17 @@ import (
 
 const pluginName = "hermes"
 
-// Hermes 结构体
+// Hermes struct
 type Hermes struct {
 	Next           plugin.Handler
 	DatabaseConfig store.DatabaseConfig
 	Resolver       *resolver.Resolver
 	GeoIPPath      string
+	CacheSizeMB    int // Cache Size limit, Unit: MB
 }
 
-// ServeDNS 处理 DNS 请求
+
+// ServeDNS handles DNS requests
 func (h *Hermes) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
 	state := request.Request{W: w, Req: r}
 
@@ -37,45 +39,45 @@ func (h *Hermes) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg)
 	return dns.RcodeSuccess, nil
 }
 
-// Name 插件名称
+// Name returns the plugin name
 func (h *Hermes) Name() string { return pluginName }
 
-// initAdvancedDBPool 初始化数据库连接池
+// initAdvancedDBPool initializes database connection pool
 func (h *Hermes) initAdvancedDBPool() error {
-	// 使用共享的 RDBStore 初始化数据库
+	// Initialize DB using shared RDBStore
 	err := store.GetInstance().Initialize(h.DatabaseConfig)
 	if err != nil {
-		return fmt.Errorf("数据库初始化失败: %w", err)
+		return fmt.Errorf("failed to initialize database: %w", err)
 	}
 
-	logger.Info("数据库连接初始化成功", logger.Any("type", h.DatabaseConfig.Type))
+	logger.Info("Database connection initialized successfully", logger.Any("type", h.DatabaseConfig.Type))
 	return nil
 }
 
-// Close 关闭数据库连接
+// Close closes database connections
 func (h *Hermes) Close() error {
 	return store.GetInstance().Close()
 }
 
-// GetDB 返回 GORM 数据库实例用于查询
+// GetDB returns GORM database instance for queries
 func (h *Hermes) GetDB() *gorm.DB {
 	return store.GetInstance().GetDB()
 }
 
-// HealthCheck 执行数据库健康检查
+// HealthCheck executes database healthcheck
 func (h *Hermes) HealthCheck() error {
 	return store.GetInstance().HealthCheck()
 }
 
-// MonitorConnectionPool 监控数据库连接池状态
+// MonitorConnectionPool monitors database connection pool status
 func (h *Hermes) MonitorConnectionPool() {
-	// 将监控任务委托给 store 包处理
+	// Delegate monitoring tasks to store package
 	ctx := context.Background()
 	go store.GetInstance().MonitorConnectionPool(ctx)
 }
 
-// ValidateConfig 验证数据库配置
+// ValidateConfig validates database configuration
 func (h *Hermes) ValidateConfig() error {
-	// 目前依赖 Initialize 中的验证逻辑，此处预留
+	// Currently relies on Initialize validation, reserved here
 	return nil
 }
